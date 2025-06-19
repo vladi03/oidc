@@ -8,7 +8,7 @@
     "firebase-functions": "^4.4.1",
     "express": "^4.18.2",
     "cors": "^2.8.5",
-    "oidc-provider": "^8.10.0",
+    "oidc-provider": "^8.8.1",
     "node-fetch": "^2.6.7"
   }
 }
