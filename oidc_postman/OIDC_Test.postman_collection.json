@@ -1,0 +1,107 @@
+{
+  "info": {
+    "_postman_id": "43eb70e2-aa9c-4697-bb15-5cc151156cab",
+    "name": "OIDC Provider Test Collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "This collection demonstrates the OpenID Connect authorization code with PKCE flow.\n\nBefore running the requests, manually obtain an authorization code by visiting the authorization endpoint in a browser. Construct the URL as:\n\n`{{OIDC_BASE_URL}}/auth?client_id={{CLIENT_ID}}&redirect_uri={{REDIRECT_URI}}&response_type=code&scope=openid%20profile%20email%20offline_access&code_challenge_method=S256&code_challenge=<CODE_CHALLENGE>`\n\nAfter logging in, copy the `code` parameter from the redirect URL and set it in the environment variable `AUTH_CODE`. Also set the matching `CODE_VERIFIER`. Then run the requests in order."
+  },
+  "item": [
+    {
+      "name": "Exchange Code for Token",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "var jsonData = pm.response.json();",
+              "if (jsonData.access_token) pm.environment.set('ACCESS_TOKEN', jsonData.access_token);",
+              "if (jsonData.id_token) pm.environment.set('ID_TOKEN', jsonData.id_token);",
+              "if (jsonData.refresh_token) pm.environment.set('REFRESH_TOKEN', jsonData.refresh_token);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/x-www-form-urlencoded"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            { "key": "grant_type", "value": "authorization_code" },
+            { "key": "client_id", "value": "{{CLIENT_ID}}" },
+            { "key": "code", "value": "{{AUTH_CODE}}" },
+            { "key": "redirect_uri", "value": "{{REDIRECT_URI}}" },
+            { "key": "code_verifier", "value": "{{CODE_VERIFIER}}" }
+          ]
+        },
+        "url": {
+          "raw": "{{OIDC_BASE_URL}}/token",
+          "host": ["{{OIDC_BASE_URL}}"],
+          "path": ["token"]
+        }
+      }
+    },
+    {
+      "name": "UserInfo",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{ACCESS_TOKEN}}"
+          }
+        ],
+        "url": {
+          "raw": "{{OIDC_BASE_URL}}/userinfo",
+          "host": ["{{OIDC_BASE_URL}}"],
+          "path": ["userinfo"]
+        }
+      }
+    },
+    {
+      "name": "Refresh Token",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "var jsonData = pm.response.json();",
+              "if (jsonData.access_token) pm.environment.set('ACCESS_TOKEN', jsonData.access_token);",
+              "if (jsonData.id_token) pm.environment.set('ID_TOKEN', jsonData.id_token);",
+              "if (jsonData.refresh_token) pm.environment.set('REFRESH_TOKEN', jsonData.refresh_token);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/x-www-form-urlencoded"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            { "key": "grant_type", "value": "refresh_token" },
+            { "key": "client_id", "value": "{{CLIENT_ID}}" },
+            { "key": "refresh_token", "value": "{{REFRESH_TOKEN}}" }
+          ]
+        },
+        "url": {
+          "raw": "{{OIDC_BASE_URL}}/token",
+          "host": ["{{OIDC_BASE_URL}}"],
+          "path": ["token"]
+        }
+      }
+    }
+  ]
+}
