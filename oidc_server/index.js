@@ -25,8 +25,8 @@ const configuration = {
     }
   ],
   jwks,
+  pkce: { required: () => true },
   features: {
-    pkce: { required: () => true },
     devInteractions: { enabled: false },
     revocation: { enabled: true }
   },
