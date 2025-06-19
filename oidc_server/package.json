@@ -16,6 +16,7 @@
     "supertest": "^6.3.3"
   },
   "scripts": {
-    "test": "mocha"
+    "test": "mocha",
+    "start": "firebase emulators:start --only functions"
   }
 }
