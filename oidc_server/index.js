@@ -8,6 +8,7 @@ const fetch = require('node-fetch');
 admin.initializeApp();
 
 const issuer = process.env.OIDC_ISSUER || 'http://localhost:3000';
+const basePath = new URL(issuer).pathname.replace(/\/$/, '');
 
 const jwks = require('./jwks.json');
 
@@ -29,6 +30,9 @@ const configuration = {
   features: {
     devInteractions: { enabled: false },
     revocation: { enabled: true }
+  },
+  interactions: {
+    url: (ctx, interaction) => `${basePath}/interaction/${interaction.uid}`
   },
   findAccount: async (ctx, id) => {
     try {
@@ -53,6 +57,13 @@ const oidc = new Provider(issuer, configuration);
 
 const app = express();
 
+app.use((req, res, next) => {
+  if (basePath) {
+    req.baseUrl = basePath;
+  }
+  next();
+});
+
 app.use('/token', cors());
 app.use('/me', cors());
 app.use('/userinfo', cors());
@@ -64,7 +75,7 @@ app.get('/interaction/:uid', async (req, res, next) => {
 <html>
   <body>
     <h1>Login</h1>
-    <form method="post" action="/interaction/${details.uid}/login">
+    <form method="post" action="${basePath}/interaction/${details.uid}/login">
       <label>Email: <input type="email" name="email" /></label><br/>
       <label>Password: <input type="password" name="password" /></label><br/>
       <button type="submit">Login</button>
@@ -87,7 +98,7 @@ app.post('/interaction/:uid/login', express.urlencoded({ extended: false }), asy
       body: JSON.stringify({ email, password, returnSecureToken: true })
     });
     if (!resp.ok) {
-      res.redirect(`/interaction/${details.uid}?error=login_failed`);
+      res.redirect(`${basePath}/interaction/${details.uid}?error=login_failed`);
       return;
     }
     const data = await resp.json();
