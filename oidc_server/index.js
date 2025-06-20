@@ -8,10 +8,11 @@ const fetch = require('node-fetch');
 admin.initializeApp();
 
 const issuer = process.env.OIDC_ISSUER || 'http://localhost:3000';
+
 const basePath = "http://127.0.0.1:5001/netware-326600/us-central1/oidc"; //= new URL(issuer).pathname.replace(/\/$/, '');
 console.log(basePath);
-console.log(issuer);
 console.log("~~~~~~~~~~~~~~~~~~~~~~~~~");
+
 const jwks = require('./jwks.json');
 
 const configuration = {
