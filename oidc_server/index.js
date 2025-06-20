@@ -5,11 +5,14 @@ const express = require('express');
 const cors = require('cors');
 const fetch = require('node-fetch');
 
-admin.initializeApp();
+if (!admin.apps.length) {
+  admin.initializeApp();
+}
 
 const issuer = process.env.OIDC_ISSUER || 'http://localhost:3000';
 
-const basePath = issuer; //= new URL(issuer).pathname.replace(/\/$/, '');
+const issuerUrl = new URL(issuer);
+const basePath = issuerUrl.pathname.replace(/\/$/, '');
 console.log(basePath);
 console.log("~~~~~~~~~~~~~~~~~~~~~~~~~");
 
@@ -57,16 +60,17 @@ const configuration = {
 };
 
 const oidc = new Provider(issuer, configuration);
+oidc.proxy = true;
 
 const app = express();
-/*
+app.set('trust proxy', true);
+// Ensure generated URLs use the configured issuer and mount path
 app.use((req, res, next) => {
-  if (basePath) {
-    req.baseUrl = basePath;
-  }
+  req.headers['x-forwarded-host'] = issuerUrl.host;
+  req.headers['x-forwarded-proto'] = issuerUrl.protocol.replace(':', '');
+  req.baseUrl = basePath;
   next();
 });
-*/
 
 app.use('/token', cors());
 app.use('/me', cors());
