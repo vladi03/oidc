@@ -55,18 +55,21 @@ const configuration = {
     }
   }
 };
-
+const issuerUrl = new URL(issuer);
+console.log(issuer);
+console.log("~~~~~~~~~~~~~~~~~~~~~~~~~");
 const oidc = new Provider(issuer, configuration);
+oidc.proxy = true;
 
 const app = express();
-/*
+app.set('trust proxy', true);
+// Ensure generated URLs use the configured issuer
+
 app.use((req, res, next) => {
-  if (basePath) {
-    req.baseUrl = basePath;
-  }
+  req.headers['x-forwarded-host'] = issuerUrl.host;
+  req.headers['x-forwarded-proto'] = issuerUrl.protocol.replace(':', '');
   next();
 });
-*/
 
 app.use('/token', cors());
 app.use('/me', cors());
