@@ -8,7 +8,10 @@ const fetch = require('node-fetch');
 admin.initializeApp();
 
 const issuer = process.env.OIDC_ISSUER || 'http://localhost:3000';
-const basePath = new URL(issuer).pathname.replace(/\/$/, '');
+
+const basePath = "http://127.0.0.1:5001/netware-326600/us-central1/oidc"; //= new URL(issuer).pathname.replace(/\/$/, '');
+console.log(basePath);
+console.log("~~~~~~~~~~~~~~~~~~~~~~~~~");
 
 const jwks = require('./jwks.json');
 
@@ -72,7 +75,7 @@ app.get('/interaction/:uid', async (req, res, next) => {
   try {
     const details = await oidc.interactionDetails(req, res);
     res.send(`<!DOCTYPE html>
-<html>
+<html lang="en">
   <body>
     <h1>Login</h1>
     <form method="post" action="${basePath}/interaction/${details.uid}/login">
@@ -91,16 +94,19 @@ app.post('/interaction/:uid/login', express.urlencoded({ extended: false }), asy
   try {
     const details = await oidc.interactionDetails(req, res);
     const { email, password } = req.body;
-    const apiKey = process.env.FIREBASE_API_KEY;
+    const apiKey = process.env.FB_API_KEY;
     const resp = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password, returnSecureToken: true })
     });
+
+
     if (!resp.ok) {
       res.redirect(`${basePath}/interaction/${details.uid}?error=login_failed`);
       return;
     }
+    console.log(`~~~~~~~~~~  Login successfully! ${email}  ~~~~~~~~~~~`);
     const data = await resp.json();
     const result = {
       login: { accountId: data.localId }
