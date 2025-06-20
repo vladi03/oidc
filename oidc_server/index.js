@@ -9,7 +9,7 @@ admin.initializeApp();
 
 const issuer = process.env.OIDC_ISSUER || 'http://localhost:3000';
 
-const basePath = "http://127.0.0.1:5001/netware-326600/us-central1/oidc"; //= new URL(issuer).pathname.replace(/\/$/, '');
+const basePath = issuer; //= new URL(issuer).pathname.replace(/\/$/, '');
 console.log(basePath);
 console.log("~~~~~~~~~~~~~~~~~~~~~~~~~");
 
@@ -59,13 +59,14 @@ const configuration = {
 const oidc = new Provider(issuer, configuration);
 
 const app = express();
-
+/*
 app.use((req, res, next) => {
   if (basePath) {
     req.baseUrl = basePath;
   }
   next();
 });
+*/
 
 app.use('/token', cors());
 app.use('/me', cors());
