@@ -8,7 +8,10 @@ const fetch = require('node-fetch');
 admin.initializeApp();
 
 const issuer = process.env.OIDC_ISSUER || 'http://localhost:3000';
-
+const basePath = "http://127.0.0.1:5001/netware-326600/us-central1/oidc"; //= new URL(issuer).pathname.replace(/\/$/, '');
+console.log(basePath);
+console.log(issuer);
+console.log("~~~~~~~~~~~~~~~~~~~~~~~~~");
 const jwks = require('./jwks.json');
 
 const configuration = {
@@ -29,6 +32,9 @@ const configuration = {
   features: {
     devInteractions: { enabled: false },
     revocation: { enabled: true }
+  },
+  interactions: {
+    url: (ctx, interaction) => `${basePath}/interaction/${interaction.uid}`
   },
   findAccount: async (ctx, id) => {
     try {
@@ -53,6 +59,13 @@ const oidc = new Provider(issuer, configuration);
 
 const app = express();
 
+app.use((req, res, next) => {
+  if (basePath) {
+    req.baseUrl = basePath;
+  }
+  next();
+});
+
 app.use('/token', cors());
 app.use('/me', cors());
 app.use('/userinfo', cors());
@@ -61,10 +74,10 @@ app.get('/interaction/:uid', async (req, res, next) => {
   try {
     const details = await oidc.interactionDetails(req, res);
     res.send(`<!DOCTYPE html>
-<html>
+<html lang="en">
   <body>
     <h1>Login</h1>
-    <form method="post" action="/interaction/${details.uid}/login">
+    <form method="post" action="${basePath}/interaction/${details.uid}/login">
       <label>Email: <input type="email" name="email" /></label><br/>
       <label>Password: <input type="password" name="password" /></label><br/>
       <button type="submit">Login</button>
@@ -80,16 +93,19 @@ app.post('/interaction/:uid/login', express.urlencoded({ extended: false }), asy
   try {
     const details = await oidc.interactionDetails(req, res);
     const { email, password } = req.body;
-    const apiKey = process.env.FIREBASE_API_KEY;
+    const apiKey = process.env.FB_API_KEY;
     const resp = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password, returnSecureToken: true })
     });
+
+
     if (!resp.ok) {
-      res.redirect(`/interaction/${details.uid}?error=login_failed`);
+      res.redirect(`${basePath}/interaction/${details.uid}?error=login_failed`);
       return;
     }
+    console.log(`~~~~~~~~~~  Login successfully! ${email}  ~~~~~~~~~~~`);
     const data = await resp.json();
     const result = {
       login: { accountId: data.localId }
