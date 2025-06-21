@@ -24,6 +24,7 @@ const configuration = {
       client_id: 'oidc_ui_tester',
       redirect_uris: [
         'http://localhost:3000/callback',
+        'http://localhost:5001/callback',
         'https://your-production-app.com/callback'
       ],
       response_types: ['code'],
@@ -43,6 +44,7 @@ const configuration = {
   findAccount: async (ctx, id) => {
     try {
       const user = await admin.auth().getUser(id);
+      console.log(`~~~~~~~~~~ findAccount for ${user.email} ~~~~~~~~~~`);
       return {
         accountId: id,
         async claims() {
@@ -111,12 +113,26 @@ app.post('/interaction/:uid/login', express.urlencoded({ extended: false }), asy
       res.redirect(`${basePath}/interaction/${details.uid}?error=login_failed`);
       return;
     }
-    console.log(`~~~~~~~~~~  Login successfully! ${email}  ~~~~~~~~~~~`);
+
     const data = await resp.json();
+    console.log(`~~~~~~~~~~  Login successfully! ${email}-${data.localId} - ${details.prompt.name} ~~~~~~~~~~~`);
+    console.log('➡️  prompt.name =', details.prompt.name);
+    console.log('➡️  prompt.name =', data);
+    /*
     const result = {
-      login: { accountId: data.localId }
+      login: { accountId: data.localId },
+      consent: {
+        // grant exactly the scopes the client asked for
+        grantScope: 'openid'
+      },
     };
-    await oidc.interactionFinished(req, res, result, { mergeWithLastSubmission: false });
+    */
+    res.redirect(`https://your-production-app.com/callback?token=${data.idToken}`);
+    /*
+    return  oidc.interactionFinished(req, res, result, {
+      mergeWithLastSubmission: false
+    });
+     */
   } catch (err) {
     next(err);
   }
