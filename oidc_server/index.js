@@ -27,8 +27,8 @@ const configuration = {
         'http://localhost:5001/callback',
         'https://your-production-app.com/callback'
       ],
-      response_types: ['code'],
-      grant_types: ['authorization_code'],
+      response_types: ['code'], //, 'id_token'
+      grant_types: ['authorization_code'], //, 'implicit'
       token_endpoint_auth_method: 'none'
     }
   ],
@@ -63,6 +63,16 @@ const configuration = {
 
 const oidc = new Provider(issuer, configuration);
 oidc.proxy = true;
+
+// Post-middleware to override jwks_uri in the discovery document
+oidc.use(async (ctx, next) => {
+  await next();
+
+  // ctx.oidc.route === 'discovery' means we’re handling GET /.well-known/openid-configuration
+  if (ctx.oidc && ctx.oidc.route === 'discovery') {
+    ctx.body.jwks_uri = `https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com`;
+  }
+});
 
 const app = express();
 app.set('trust proxy', true);
@@ -118,6 +128,8 @@ app.post('/interaction/:uid/login', express.urlencoded({ extended: false }), asy
     console.log(`~~~~~~~~~~  Login successfully! ${email}-${data.localId} - ${details.prompt.name} ~~~~~~~~~~~`);
     console.log('➡️  prompt.name =', details.prompt.name);
     console.log('➡️  prompt.name =', data);
+    res.redirect(`https://your-production-app.com/callback#id_token=${data.idToken}`);
+
     /*
     const result = {
       login: { accountId: data.localId },
@@ -126,13 +138,13 @@ app.post('/interaction/:uid/login', express.urlencoded({ extended: false }), asy
         grantScope: 'openid'
       },
     };
-    */
-    res.redirect(`https://your-production-app.com/callback?token=${data.idToken}`);
-    /*
+
+
+
     return  oidc.interactionFinished(req, res, result, {
       mergeWithLastSubmission: false
     });
-     */
+  */
   } catch (err) {
     next(err);
   }
