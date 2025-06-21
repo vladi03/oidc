@@ -23,9 +23,10 @@ const configuration = {
     {
       client_id: 'oidc_ui_tester',
       redirect_uris: [
-        'http://localhost:3000/callback',
-        'http://localhost:5001/callback',
-        'https://your-production-app.com/callback'
+          'http://localhost:5173/callback',
+          'http://localhost:3000/callback',
+          'http://localhost:5001/callback',
+          'https://your-production-app.com/callback'
       ],
       response_types: ['code'], //, 'id_token'
       grant_types: ['authorization_code'], //, 'implicit'
@@ -64,7 +65,7 @@ const configuration = {
 const oidc = new Provider(issuer, configuration);
 oidc.proxy = true;
 
-// Post-middleware to override jwks_uri in the discovery document
+/* Post-middleware to override jwks_uri in the discovery document
 oidc.use(async (ctx, next) => {
   await next();
 
@@ -73,6 +74,7 @@ oidc.use(async (ctx, next) => {
     ctx.body.jwks_uri = `https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com`;
   }
 });
+*/
 
 const app = express();
 app.set('trust proxy', true);
@@ -111,6 +113,8 @@ app.post('/interaction/:uid/login', express.urlencoded({ extended: false }), asy
   try {
     const details = await oidc.interactionDetails(req, res);
     const { email, password } = req.body;
+    const {state, code_challenge, redirect_uri, client_id} = details.params;
+    console.log("➡️ ", details);
     const apiKey = process.env.FB_API_KEY;
     const resp = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`, {
       method: 'POST',
@@ -125,12 +129,13 @@ app.post('/interaction/:uid/login', express.urlencoded({ extended: false }), asy
     }
 
     const data = await resp.json();
-    console.log(`~~~~~~~~~~  Login successfully! ${email}-${data.localId} - ${details.prompt.name} ~~~~~~~~~~~`);
+    console.log(data);
+    console.log(`~~~~~~~~~~  Login successfully! ${email}-${data.localId} - ${details.prompt.name} - ${client_id} ~~~~~~~~~~~`);
     console.log('➡️  prompt.name =', details.prompt.name);
     console.log('➡️  prompt.name =', data);
-    res.redirect(`https://your-production-app.com/callback#id_token=${data.idToken}`);
-
-    /*
+    //res.redirect(`http://localhost:5173/callback#id_token=${data.idToken}&state=state=5f38e767269c467abae25dd4b879f395`);
+    //res.redirect(`${redirect_uri}?code=${code_challenge}&state=${state}`);
+/*
     const result = {
       login: { accountId: data.localId },
       consent: {
@@ -141,10 +146,13 @@ app.post('/interaction/:uid/login', express.urlencoded({ extended: false }), asy
 
 
 
-    return  oidc.interactionFinished(req, res, result, {
+    oidc.interactionFinished(req, res, result, {
       mergeWithLastSubmission: false
     });
-  */
+*/
+    //somehow I need to save the code when it comes back in the /token request
+    res.redirect(`${redirect_uri}?code=${code_challenge}&state=${state}`);
+
   } catch (err) {
     next(err);
   }
